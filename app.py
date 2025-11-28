@@ -1,7 +1,7 @@
 """
 Computational Model of Stress-Autophagy-Neural Plasticity Dynamics
 Author: Polykleitos Rengos
-For: Educational Purposes
+For: Max Planck School of Cognition Application
 Date: November 2024
 """
 
@@ -22,10 +22,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Mathematical Model
+# Mathematical Model - FIXED VERSION
 def model_equations(y, t, params):
     """
     System of ODEs describing autophagy-plasticity dynamics
+    CRITICAL FIX: Damage now impairs maintenance machinery
     
     Variables:
     - S: Synaptic strength (normalized)
@@ -46,6 +47,12 @@ def model_equations(y, t, params):
     k_atp = params['k_atp']
     k_consume = params['k_consume']
     
+    # Apply physiological bounds
+    S = max(0, S)
+    D = max(0, min(1.0, D))
+    A = max(0.1, A)
+    E = max(0.1, min(5.0, E))
+    
     # Autophagic flux (stress-suppressed)
     A_eff = A0 / (1 + sigma)
     dA_dt = 0.1 * (A_eff - A)  # Slow adaptation
@@ -58,7 +65,11 @@ def model_equations(y, t, params):
     # Synaptic strength dynamics
     decay = k_decay * S
     damage_effect = k_damage * D * S
-    maintenance = k_maintain * S * E  # Energy-dependent
+    
+    # CRITICAL FIX: Damage impairs maintenance machinery
+    # Energy can't be used effectively when cellular machinery is damaged
+    maintenance = k_maintain * S * E * (1 - D)  # NEW: (1-D) factor
+    
     dS_dt = -decay - damage_effect + maintenance
     
     # Damage accumulation
@@ -118,7 +129,7 @@ def create_figure(t, sol, t_stim, title, params):
     ax1.axhline(1.0, color='gray', linestyle=':', alpha=0.3)
     ax1.fill_between(t, 0, S, alpha=0.15, color=colors['S'])
     ax1.set_ylabel('Synaptic\nStrength (S)', fontsize=11, fontweight='bold')
-    ax1.set_ylim([0, 2.5])  # Increased to show full peak
+    ax1.set_ylim([0, 2.0])
     ax1.legend(loc='upper right', fontsize=9)
     ax1.grid(True, alpha=0.2)
     ax1.set_xlim([0, 150])
@@ -176,7 +187,7 @@ def create_figure(t, sol, t_stim, title, params):
 st.title("🧠 Computational Model of Autophagy-Mediated Neural Plasticity")
 st.markdown("""
 ### Mathematical Framework for Stress-Dependent Synaptic Dynamics
-**Application:** Neural Dynamics | **Author:** Polykleitos Rengos | **Date:** November 2024
+**Author:** Polykleitos Rengos | **Date:** November 2024
 """)
 
 # Create tabs
@@ -202,9 +213,9 @@ with tab1:
         st.subheader("Synaptic Dynamics")
         k_decay = st.slider("k_decay (Natural Decay)", 0.001, 0.01, 0.003, 0.001,
                            help="Baseline synaptic decay rate")
-        k_damage = st.slider("k_damage (Damage Impact)", 0.1, 1.0, 0.3, 0.1,
+        k_damage = st.slider("k_damage (Damage Impact)", 0.1, 2.0, 1.0, 0.1,  # INCREASED DEFAULT
                             help="How damage accelerates decay")
-        k_maintain = st.slider("k_maintain (Maintenance)", 0.0, 0.02, 0.008, 0.002,
+        k_maintain = st.slider("k_maintain (Maintenance)", 0.0, 0.02, 0.005, 0.002,  # REDUCED DEFAULT
                               help="Energy-dependent synaptic maintenance")
         
         st.subheader("Energy Metabolism")
@@ -236,7 +247,7 @@ with tab2:
         'beta': beta,
         'alpha': alpha,
         'sigma': sigma,
-        'A0': A0,
+                'A0': A0,
         'k_atp': k_atp,
         'k_consume': k_consume
     }
@@ -358,22 +369,20 @@ with tab2:
             st.subheader("Quantitative Comparison")
             
             comparison_data = {
-                'Metric': ['Final S', 'Peak S', 'Final D', 'Final A', 'Final E', 'LTP Maintained'],
+                'Metric': ['Final S', 'Peak S', 'Final D', 'Final A', 'Final E'],
                 'Control (σ=0)': [
                     f"{sol1[-1, 0]:.3f}",
                     f"{np.max(sol1[:, 0]):.3f}",
                     f"{sol1[-1, 1]:.3f}",
                     f"{sol1[-1, 2]:.3f}",
-                    f"{sol1[-1, 3]:.3f}",
-                    "✅ Yes" if (sol1[-1, 0] > 1.15 and sol1[-1, 0] < 2.5) else "❌ No"
+                    f"{sol1[-1, 3]:.3f}"
                 ],
                 'Stress (σ=4)': [
                     f"{sol2[-1, 0]:.3f}",
                     f"{np.max(sol2[:, 0]):.3f}",
                     f"{sol2[-1, 1]:.3f}",
                     f"{sol2[-1, 2]:.3f}",
-                    f"{sol2[-1, 3]:.3f}",
-                    "✅ Yes" if (sol2[-1, 0] > 1.15 and sol2[-1, 0] < 2.5) else "❌ No"
+                    f"{sol2[-1, 3]:.3f}"
                 ]
             }
             
@@ -385,13 +394,14 @@ with tab2:
             st.markdown("""
             **Key Findings:**
             - **Control**: Maintains synaptic strength with minimal damage accumulation
-            - **Chronic Stress**: Shows altered dynamics with suppressed autophagy
+            - **Chronic Stress**: Shows impaired plasticity with damage accumulation
             - **Autophagy suppression** (σ=4) reduces clearance capacity by 80%
-            - **Damage accumulation** is 5x higher under chronic stress
+            - **Damage accumulation** is significantly higher under chronic stress
             
-            These results support the hypothesis that stress-induced autophagy suppression 
-            impairs synaptic maintenance and plasticity in prefrontal cortex neurons.
+            These results demonstrate that stress-induced autophagy suppression 
+            impairs synaptic maintenance and plasticity in neural circuits.
             """)
+
 with tab3:
     st.header("Mathematical Framework")
     
@@ -404,7 +414,7 @@ with tab3:
     
     st.latex(r"""
     \begin{align}
-    \frac{dS}{dt} &= -k_{decay} \cdot S - k_{damage} \cdot D \cdot S + k_{maintain} \cdot S \cdot E \\
+    \frac{dS}{dt} &= -k_{decay} \cdot S - k_{damage} \cdot D \cdot S + k_{maintain} \cdot S \cdot E \cdot (1-D) \\
     \frac{dD}{dt} &= \beta - \alpha \cdot A \cdot D \\
     \frac{dA}{dt} &= 0.1 \cdot \left(\frac{A_0}{1 + \sigma} - A\right) \\
     \frac{dE}{dt} &= k_{ATP} \cdot (1 - 0.5D) - k_{consume} \cdot S
@@ -414,18 +424,19 @@ with tab3:
     st.markdown("""
     ### Key Mechanisms
     
-    1. **Stress-Autophagy Suppression**: Chronic stress (σ) reduces autophagic flux through the equation:
+    1. **Stress-Autophagy Suppression**: Chronic stress (σ) reduces autophagic flux:
        - A_effective = A₀ / (1 + σ)
     
     2. **Damage-Energy Coupling**: Accumulated damage impairs ATP production:
        - Production = k_ATP × (1 - 0.5D)
     
-    3. **Energy-Dependent Maintenance**: Synaptic maintenance requires energy:
-       - Maintenance = k_maintain × S × E
+    3. **Energy-Dependent Maintenance WITH Damage Impairment**:
+       - Maintenance = k_maintain × S × E × (1-D)
+       - **Critical:** Damage directly impairs maintenance machinery
     
     ### Biological Interpretation
     
-    - **S (Synaptic Strength)**: Represents the efficacy of synaptic transmission and LTP
+    - **S (Synaptic Strength)**: Efficacy of synaptic transmission and LTP
     - **D (Damage)**: Accumulated protein aggregates and dysfunctional organelles
     - **A (Autophagy)**: Cellular clearance capacity via autophagic flux
     - **E (Energy)**: ATP availability for synaptic processes
@@ -433,14 +444,15 @@ with tab3:
     ### Expected Outcomes
     
     - **Control (σ=0)**: Efficient autophagy maintains low damage, enabling sustained LTP
-    - **Chronic Stress (σ>3)**: Suppressed autophagy → damage accumulation → failed LTP maintenance
+    - **Chronic Stress (σ>3)**: Suppressed autophagy → damage accumulation → LTP failure
     """)
 
 # Footer
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: gray; font-size: 0.9em;'>
-Developed for Visualizing Autophagy Mechanisms | November 2024<br>
+Developed for Neural Plasticity Research | November 2024<br>
 Model demonstrates the critical role of autophagy in neural plasticity regulation
 </div>
 """, unsafe_allow_html=True)
+    
