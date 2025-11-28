@@ -217,7 +217,7 @@ with tab1:
     stim_time = st.number_input("Stimulus Time", 10, 50, 30, 5)
     stim_strength = st.slider("LTP Stimulus Strength", 0.0, 1.0, 0.5, 0.1)
     with tab2:
-    st.header("Simulation Results")
+        st.header("Simulation Results")
     
     # Compile parameters
     params = {
