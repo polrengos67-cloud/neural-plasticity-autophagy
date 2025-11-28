@@ -1,8 +1,8 @@
 """
 Computational Model of Stress-Autophagy-Neural Plasticity Dynamics
 Author: Polykleitos Rengos
-For: Max Planck School of Cognition Application
-Date: November 2024
+For: Educational Purposes
+Date: October 2024
 """
 
 import streamlit as st
