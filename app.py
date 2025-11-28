@@ -118,7 +118,7 @@ def create_figure(t, sol, t_stim, title, params):
     ax1.axhline(1.0, color='gray', linestyle=':', alpha=0.3)
     ax1.fill_between(t, 0, S, alpha=0.15, color=colors['S'])
     ax1.set_ylabel('Synaptic\nStrength (S)', fontsize=11, fontweight='bold')
-    ax1.set_ylim([0, 2.0])
+    ax1.set_ylim([0, 2.5])  # Increased to show full peak
     ax1.legend(loc='upper right', fontsize=9)
     ax1.grid(True, alpha=0.2)
     ax1.set_xlim([0, 150])
@@ -270,7 +270,7 @@ with tab1:
             with col3:
                 st.metric("Final Damage", f"{D_final:.3f}")
             with col4:
-                maintained = "✅ Yes" if S_final > 1.1 else "❌ No"
+                maintained = "✅ Yes" if S_final > 1.15 else "❌ No"
                 st.metric("LTP Maintained", maintained)
             
             # Download button
@@ -339,22 +339,24 @@ with tab1:
             st.subheader("Quantitative Comparison")
             
             comparison_data = {
-                'Metric': ['Final S', 'Peak S', 'Final D', 'Final A', 'Final E'],
-                'Control (σ=0)': [
-                    f"{sol1[-1, 0]:.3f}",
-                    f"{np.max(sol1[:, 0]):.3f}",
-                    f"{sol1[-1, 1]:.3f}",
-                    f"{sol1[-1, 2]:.3f}",
-                    f"{sol1[-1, 3]:.3f}"
-                ],
-                'Stress (σ=4)': [
-                    f"{sol2[-1, 0]:.3f}",
-                    f"{np.max(sol2[:, 0]):.3f}",
-                    f"{sol2[-1, 1]:.3f}",
-                    f"{sol2[-1, 2]:.3f}",
-                    f"{sol2[-1, 3]:.3f}"
-                ]
-            }
+    'Metric': ['Final S', 'Peak S', 'Final D', 'Final A', 'Final E', 'LTP Maintained'],
+    'Control (σ=0)': [
+        f"{sol1[-1, 0]:.3f}",
+        f"{np.max(sol1[:, 0]):.3f}",
+        f"{sol1[-1, 1]:.3f}",
+        f"{sol1[-1, 2]:.3f}",
+        f"{sol1[-1, 3]:.3f}",
+        "✅ Yes" if sol1[-1, 0] > 1.15 else "❌ No"
+    ],
+    'Stress (σ=4)': [
+        f"{sol2[-1, 0]:.3f}",
+        f"{np.max(sol2[:, 0]):.3f}",
+        f"{sol2[-1, 1]:.3f}",
+        f"{sol2[-1, 2]:.3f}",
+        f"{sol2[-1, 3]:.3f}",
+        "✅ Yes" if sol2[-1, 0] > 1.15 else "❌ No"
+    ]
+}
             
             df_comparison = pd.DataFrame(comparison_data)
             st.table(df_comparison)
@@ -407,7 +409,7 @@ with tab3:
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: gray; font-size: 0.9em;'>
-Developed for Max Planck School of Cognition Application | November 2024<br>
+Developed for Visualizing Autophagy Mechanisms | November 2024<br>
 Model demonstrates the critical role of autophagy in neural plasticity regulation
 </div>
 """, unsafe_allow_html=True)
