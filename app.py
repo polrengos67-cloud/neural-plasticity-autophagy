@@ -31,9 +31,9 @@ def model_equations(y, t, params):
     S, D, A, E = y
     
     # Extract parameters
-    k_decay = params['k_decay']
-    k_damage = params['k_damage']
-    k_maintain = params['k_maintain']
+    k_decay = 0.001  # MUCH LOWER (was probably 0.003+)
+    k_maintain = 0.015  # HIGHER (was probably 0.005)
+    k_damage = 0.5  # MODERATE
     beta = params['beta']
     alpha = params['alpha']
     sigma = params['sigma']
