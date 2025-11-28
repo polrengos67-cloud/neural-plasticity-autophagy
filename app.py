@@ -25,15 +25,15 @@ st.set_page_config(
 # Mathematical Model - FIXED VERSION
 def model_equations(y, t, params):
     """
-    System of ODEs describing autophagy-plasticity dynamics.
-    IMPROVEMENT: Uses continuous inhibition terms instead of hard thresholds.
+    System of ODEs describing autophagy-plasticity dynamics
+    AGGRESSIVE FIX: Strong damage effects under stress
     """
     S, D, A, E = y
     
     # Extract parameters
-    k_decay = 0.001  # MUCH LOWER (was probably 0.003+)
-    k_maintain = 0.015  # HIGHER (was probably 0.005)
-    k_damage = 0.5  # MODERATE
+    k_decay = params['k_decay']
+    k_damage = params['k_damage']
+    k_maintain = params['k_maintain']
     beta = params['beta']
     alpha = params['alpha']
     sigma = params['sigma']
@@ -41,36 +41,36 @@ def model_equations(y, t, params):
     k_atp = params['k_atp']
     k_consume = params['k_consume']
     
-    # --- 1. Autophagic Flux (A) ---
-    # Adapts to stress level
-    target_A = A0 / (1 + sigma)
-    dA_dt = 0.2 * (target_A - A)
+    # Apply physiological bounds
+    S = max(0, S)
+    D = max(0, min(1.0, D))
+    A = max(0.1, A)
+    E = max(0.1, min(5.0, E))
     
-    # --- 2. Energy Dynamics (E) ---
-    # Homeostatic regulation: Energy seeks a target level determined by cell health
-    target_E = 2.0 * (1 - min(0.9, D)) # Damage lowers the energy ceiling
-    dE_dt = k_atp * (target_E - E) - (k_consume * S)
+    # Autophagic flux (stress-suppressed)
+    A_eff = A0 / (1 + sigma)
+    dA_dt = 0.1 * (A_eff - A)
     
-    # Soft constraint to prevent negative energy without hard clipping
-    if E <= 0.01 and dE_dt < 0: dE_dt = 0
-
-    # --- 3. Synaptic Strength (S) ---
-    # The Core Mechanism: Damage continuously inhibits maintenance
-    # This replaces the "if sigma > 2" block with a realistic "Hill function" inhibition
+    # Energy dynamics
+    production = k_atp * (1 - 0.5 * D)
+    consumption = k_consume * S
+    dE_dt = production - consumption
     
-    # As Damage (D) rises, this factor drops from 1.0 to 0.0
-    health_factor = 1.0 / (1.0 + 10.0 * D**2) 
+    # AGGRESSIVE FIX: Under stress, maintenance is severely impaired
+    if sigma > 2:  # Chronic stress condition
+        # Damage has exponential effect on maintenance under stress
+        maintenance = k_maintain * S * E * np.exp(-3 * D)  # Exponential damage penalty
+        # Increase damage effect under stress
+        damage_effect = k_damage * D * S * (1 + sigma/4)  # Amplified by stress
+    else:
+        # Normal conditions
+        maintenance = k_maintain * S * E * (1 - D)
+        damage_effect = k_damage * D * S
     
-    # Maintenance depends on Energy AND Health
-    maintenance = k_maintain * S * E * health_factor
-    
-    # Decay is constant, plus extra loss from direct damage
     decay = k_decay * S
-    damage_loss = k_damage * D * S
+    dS_dt = -decay - damage_effect + maintenance
     
-    dS_dt = maintenance - decay - damage_loss
-    
-    # --- 4. Damage Accumulation (D) ---
+    # Damage accumulation
     production_damage = beta
     clearance = alpha * A * D
     dD_dt = production_damage - clearance
