@@ -270,7 +270,7 @@ with tab1:
             with col3:
                 st.metric("Final Damage", f"{D_final:.3f}")
             with col4:
-                maintained = "✅ Yes" if S_final > 1.2 else "❌ No"
+                maintained = "✅ Yes" if S_final > 1.1 else "❌ No"
                 st.metric("LTP Maintained", maintained)
             
             # Download button
