@@ -1,4 +1,4 @@
-ral Dynamics"""
+"""
 Computational Model of Stress-Autophagy-Neural Plasticity Dynamics
 Author: Polykleitos Rengos
 For: Educational Purposes
