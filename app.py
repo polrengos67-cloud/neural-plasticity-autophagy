@@ -26,13 +26,7 @@ st.set_page_config(
 def model_equations(y, t, params):
     """
     System of ODEs describing autophagy-plasticity dynamics
-    CRITICAL FIX: Damage now impairs maintenance machinery
-    
-    Variables:
-    - S: Synaptic strength (normalized)
-    - D: Damage/debris accumulation (normalized)
-    - A: Autophagic flux (normalized)
-    - E: Energy availability (ATP/ADP ratio proxy)
+    AGGRESSIVE FIX: Strong damage effects under stress
     """
     S, D, A, E = y
     
@@ -55,21 +49,25 @@ def model_equations(y, t, params):
     
     # Autophagic flux (stress-suppressed)
     A_eff = A0 / (1 + sigma)
-    dA_dt = 0.1 * (A_eff - A)  # Slow adaptation
+    dA_dt = 0.1 * (A_eff - A)
     
     # Energy dynamics
-    production = k_atp * (1 - 0.5 * D)  # Damage impairs production
-    consumption = k_consume * S  # Active synapses consume ATP
+    production = k_atp * (1 - 0.5 * D)
+    consumption = k_consume * S
     dE_dt = production - consumption
     
-    # Synaptic strength dynamics
+    # AGGRESSIVE FIX: Under stress, maintenance is severely impaired
+    if sigma > 2:  # Chronic stress condition
+        # Damage has exponential effect on maintenance under stress
+        maintenance = k_maintain * S * E * np.exp(-3 * D)  # Exponential damage penalty
+        # Increase damage effect under stress
+        damage_effect = k_damage * D * S * (1 + sigma/4)  # Amplified by stress
+    else:
+        # Normal conditions
+        maintenance = k_maintain * S * E * (1 - D)
+        damage_effect = k_damage * D * S
+    
     decay = k_decay * S
-    damage_effect = k_damage * D * S
-    
-    # CRITICAL FIX: Damage impairs maintenance machinery
-    # Energy can't be used effectively when cellular machinery is damaged
-    maintenance = k_maintain * S * E * (1 - D)  # NEW: (1-D) factor
-    
     dS_dt = -decay - damage_effect + maintenance
     
     # Damage accumulation
