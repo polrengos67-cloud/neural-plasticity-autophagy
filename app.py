@@ -176,7 +176,7 @@ def create_figure(t, sol, t_stim, title, params):
 st.title("🧠 Computational Model of Autophagy-Mediated Neural Plasticity")
 st.markdown("""
 ### Mathematical Framework for Stress-Dependent Synaptic Dynamics
-**Application:** Neural Dynamics | **Author:** Polykleitos Rengos | **Date:** October 2024
+**Application:** Neural Dynamics | **Author:** Polykleitos Rengos | **Date:** November 2024
 """)
 
 # Create tabs
